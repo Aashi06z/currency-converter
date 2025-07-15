@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Currency Converter with Graph</title>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 480px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 8px;
+      font-size: 1rem;
+    }
+
+    #swap-btn {
+      grid-column: span 2;
+      padding: 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background-color: #4caf50;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+
+    #swap-btn:hover {
+      background-color: #45a049;
+    }
+
+    .history-container {
+      text-align: center;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Currency Converter</h1>
+
+  <div class="input-grid">
+    <div>
+      <label for="from-currency-amount">From Amount</label>
+      <input type="number" id="from-currency-amount" value="1" min="0" />
+    </div>
+
+    <div>
+      <label for="from-currency">From Currency</label>
+      <select id="from-currency"></select>
+    </div>
+
+    <div>
+      <label for="to-currency-amount">To Amount</label>
+      <input type="number" id="to-currency-amount" readonly />
+    </div>
+
+    <div>
+      <label for="to-currency">To Currency</label>
+      <select id="to-currency"></select>
+    </div>
+
+    <button id="swap-btn">🔄 Swap Currencies</button>
+  </div>
+
+  <div class="history-container">
+    <h3>Exchange Rate Trend (Last 7 Days)</h3>
+    <canvas id="historyChart" width="400" height="200"></canvas>
+  </div>
+
+  <script>
+    window.onload = function () {
+      const API_KEY = "a76ecbff61035f0c75d03751";
+      const BASE_URL = "https://v6.exchangerate-api.com/v6";
+
+      const fromAmount = document.getElementById("from-currency-amount");
+      const toAmount = document.getElementById("to-currency-amount");
+      const fromSelect = document.getElementById("from-currency");
+      const toSelect = document.getElementById("to-currency");
+      const swapBtn = document.getElementById("swap-btn");
+
+      const currencyList = ["USD", "INR", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY"];
+
+      // Populate dropdowns
+      currencyList.forEach(currency => {
+        const option1 = document.createElement("option");
+        option1.value = currency;
+        option1.textContent = currency;
+        fromSelect.appendChild(option1);
+
+        const option2 = document.createElement("option");
+        option2.value = currency;
+        option2.textContent = currency;
+        toSelect.appendChild(option2);
+      });
+
+      fromSelect.value = "USD";
+      toSelect.value = "INR";
+
+      async function convertCurrency() {
+        const from = fromSelect.value;
+        const to = toSelect.value;
+        const amount = parseFloat(fromAmount.value);
+
+        if (isNaN(amount) || amount <= 0) {
+          toAmount.value = "";
+          clearChart();
+          return;
+        }
+
+        const url = `${BASE_URL}/${API_KEY}/pair/${from}/${to}`;
+
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+          if (data.result === "success") {
+            const rate = data.conversion_rate;
+            const converted = (amount * rate).toFixed(2);
+            toAmount.value = converted;
+
+            fetchHistory(from, to);
+          } else {
+            console.error("API error:", data["error-type"]);
+            toAmount.value = "Error";
+            clearChart();
+          }
+        } catch (error) {
+          console.error("Conversion failed:", error);
+          toAmount.value = "Error";
+          clearChart();
+        }
+      }
+
+      swapBtn.addEventListener("click", () => {
+        const temp = fromSelect.value;
+        fromSelect.value = toSelect.value;
+        toSelect.value = temp;
+        convertCurrency();
+      });
+
+      fromAmount.addEventListener("input", convertCurrency);
+      fromSelect.addEventListener("change", convertCurrency);
+      toSelect.addEventListener("change", convertCurrency);
+
+      // Chart setup
+      let chartInstance = null;
+
+      function clearChart() {
+        if (chartInstance) {
+          chartInstance.destroy();
+          chartInstance = null;
+        }
+      }
+
+      async function fetchHistory(from, to) {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - 6);
+
+        const formatDate = d => d.toISOString().split('T')[0];
+        const url = `https://api.exchangerate.host/timeseries?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&base=${from}&symbols=${to}`;
+
+        try {
+          const res = await fetch(url);
+          const data = await res.json();
+
+          if (data.success) {
+            const labels = Object.keys(data.rates);
+            const rates = labels.map(date => data.rates[date][to]);
+            drawChart(labels, rates, from, to);
+          } else {
+            console.error("Failed to fetch history data");
+            clearChart();
+          }
+        } catch (err) {
+          console.error("Error loading chart data:", err);
+          clearChart();
+        }
+      }
+
+      function drawChart(labels, data, from, to) {
+        const ctx = document.getElementById("historyChart").getContext("2d");
+
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [{
+              label: `${from} to ${to}`,
+              data,
+              borderColor: "rgba(75, 192, 192, 1)",
+              backgroundColor: "rgba(75, 192, 192, 0.2)",
+              tension: 0.3,
+              fill: true,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: false
+              }
+            }
+          }
+        });
+      }
+
+      convertCurrency(); // initial load
+    };
+  </script>
+
+</body>
+</html>

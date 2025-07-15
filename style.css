@@ -1,0 +1,74 @@
+/* style.css */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+body {
+  background: #ffe5b4;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow:0 4px 20px 0 4px 20px #e6e6fa(0, 0, 0, 0.1);
+  width: 400px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 10px;/* space between imagea and text*/
+  margin-bottom: 20px;
+}
+
+.title img {
+  width: 50x;
+}
+
+.exchange-rate {
+  margin: 20px 0;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+.input-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 columns */
+  gap: 20px;
+}
+
+.box {
+  display: flex;
+  flex-direction: column;
+}
+
+#swap-btn {
+  margin: 10px;
+  padding: 6px 12px;
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+#swap-btn:hover {
+  background-color: #ddd;
+}
+
