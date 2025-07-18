@@ -8,7 +8,7 @@
 }
 
 body {
-  background: #ffe5b4;
+  background: #789b9d;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -32,12 +32,6 @@ body {
 
 .title img {
   width: 50x;
-}
-
-.exchange-rate {
-  margin: 20px 0;
-  font-weight: bold;
-  font-size: 18px;
 }
 
 input, select {
